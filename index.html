@@ -73,10 +73,14 @@ h1.title{font-family:'Ma Shan Zheng',cursive;font-size:52px;margin:18px 0 4px;co
 .switch.on::after{left:23px;background:var(--gold-l)}
 /* ---------- 游戏页 ---------- */
 #game{justify-content:flex-start;padding:12px}
-.topbar{width:100%;max-width:420px;display:flex;justify-content:space-between;align-items:center;padding:6px 4px}
-.progress{font-size:12px;color:var(--ink-dim);letter-spacing:1px}
+.topbar{width:100%;max-width:420px;display:flex;justify-content:space-between;align-items:center;padding:6px 4px;gap:10px}
+.back-btn{background:none;border:1px solid var(--gold-d);border-radius:8px;color:var(--gold-l);font-size:13px;
+  padding:5px 12px;cursor:pointer;font-family:'Noto Serif SC',serif;letter-spacing:1px;flex-shrink:0}
+.back-btn:active{background:#1d2c42}
+.progress{font-size:12px;color:var(--ink-dim);letter-spacing:1px;flex:1;text-align:center}
 .level-tag{font-size:12px;color:var(--gold);border:1px solid var(--gold-d);border-radius:12px;padding:2px 10px}
-.card-stage{perspective:1200px;margin:18px 0 14px;width:min(82vw,340px)}
+.card-stage{perspective:1200px;margin:18px 0 14px;width:min(82vw,340px);position:relative}
+.card-tilt{transform-style:preserve-3d;transition:transform .18s ease-out;will-change:transform}
 .card{width:100%;aspect-ratio:3/4.4;position:relative;transform-style:preserve-3d;transition:transform .7s cubic-bezier(.4,.1,.2,1);cursor:pointer}
 .card.flipped{transform:rotateY(180deg)}
 .card-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:16px;overflow:hidden;
@@ -84,12 +88,13 @@ h1.title{font-family:'Ma Shan Zheng',cursive;font-size:52px;margin:18px 0 4px;co
 .card-back{background:url('images/ui-cardback.webp') center/cover,#16233a;display:flex;align-items:center;justify-content:center}
 .card-back .cb-title{font-family:'Ma Shan Zheng',cursive;font-size:34px;color:var(--gold-l);letter-spacing:6px;
   text-shadow:0 0 20px rgba(201,163,92,.4);background:rgba(10,16,26,.55);padding:10px 18px;border-radius:8px}
-.card-front{transform:rotateY(180deg);background:var(--card);display:flex;flex-direction:column}
-.card-front .qimg{width:100%;aspect-ratio:3/2.6;object-fit:cover;display:block}
-.card-front .qbody{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px 18px;
-  background:linear-gradient(180deg,#1b2940 0%,#141f30 100%);border-top:1px solid var(--gold-d)}
-.card-front .qno{font-size:11px;color:var(--gold-d);letter-spacing:3px;margin-bottom:10px}
-.card-front .qtext{font-size:17px;line-height:1.85;text-align:center;color:var(--ink)}
+.card-front{transform:rotateY(180deg);background:var(--card)}
+.card-front .qimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.card-front .qbody{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:14px 16px 18px;background:rgba(10,16,26,.42);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-top:1px solid rgba(201,163,92,.45)}
+.card-front .qno{font-size:11px;color:var(--gold);letter-spacing:3px;margin-bottom:8px}
+.card-front .qtext{font-size:17px;line-height:1.85;text-align:center;color:#f5efdf;text-shadow:0 1px 6px rgba(0,0,0,.6)}
 .card-front .frame-line{position:absolute;inset:6px;border:1px solid rgba(201,163,92,.35);border-radius:12px;pointer-events:none}
 .turn-banner{width:100%;max-width:420px;text-align:center;margin-bottom:6px}
 .turn-name{font-size:19px;color:var(--gold-l);letter-spacing:2px}
@@ -199,18 +204,21 @@ h1.title{font-family:'Ma Shan Zheng',cursive;font-size:52px;margin:18px 0 4px;co
 <!-- 游戏页 -->
 <div class="screen" id="game">
   <div class="topbar">
+    <button class="back-btn" onclick="backToSetup()">‹ 返回</button>
     <span class="progress" id="progress"></span>
     <span class="level-tag" id="level-tag"></span>
   </div>
   <div class="card-stage" id="card-stage">
-    <div class="card" id="card">
-      <div class="card-face card-back"><div class="cb-title">心灵共振</div></div>
-      <div class="card-face card-front">
-        <div class="frame-line"></div>
-        <img class="qimg" id="q-img" src="" alt="">
-        <div class="qbody">
-          <div class="qno" id="q-no"></div>
-          <div class="qtext" id="q-text"></div>
+    <div class="card-tilt" id="card-tilt">
+      <div class="card" id="card">
+        <div class="card-face card-back"><div class="cb-title">心灵共振</div></div>
+        <div class="card-face card-front">
+          <div class="frame-line"></div>
+          <img class="qimg" id="q-img" src="" alt="">
+          <div class="qbody">
+            <div class="qno" id="q-no"></div>
+            <div class="qtext" id="q-text"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -378,13 +386,42 @@ function dealQuestion(){
   renderTurn();
 }
 
+/* 卡牌点击：第一次翻开，之后点击=答完下一位 */
 document.getElementById('card').addEventListener('click', ()=>{
   const card = document.getElementById('card');
-  G.cardFaceUp = !G.cardFaceUp;
-  card.classList.toggle('flipped', G.cardFaceUp);
-  sfxFlip();
-  applyFlip();
+  if(!G.cardFaceUp){
+    G.cardFaceUp = true;
+    card.classList.add('flipped');
+    sfxFlip();
+    applyFlip();
+    renderTurn();
+  } else {
+    nextAnswer();
+  }
 });
+
+function backToSetup(){
+  if(confirm('返回设置页？本局进度将丢失。')) openSetup(G.mode);
+}
+
+/* ---------- 卡牌跟随倾斜（鼠标 + 陀螺仪） ---------- */
+(function(){
+  const stage = document.getElementById('card-stage');
+  const tilt = document.getElementById('card-tilt');
+  stage.addEventListener('mousemove', e=>{
+    const r = stage.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - .5;
+    const y = (e.clientY - r.top) / r.height - .5;
+    tilt.style.transform = `rotateY(${x*10}deg) rotateX(${-y*10}deg)`;
+  });
+  stage.addEventListener('mouseleave', ()=>{ tilt.style.transform = ''; });
+  window.addEventListener('deviceorientation', e=>{
+    if(e.gamma == null || !document.getElementById('game').classList.contains('active')) return;
+    const x = Math.max(-1, Math.min(1, e.gamma / 30));
+    const y = Math.max(-1, Math.min(1, ((e.beta||45) - 45) / 30));
+    tilt.style.transform = `rotateY(${x*8}deg) rotateX(${-y*8}deg)`;
+  });
+})();
 
 function applyFlip(){
   const card = document.getElementById('card');
@@ -395,7 +432,7 @@ function manualFlip(){ G.flippedCard = !G.flippedCard; applyFlip(); sfxNext(); }
 function renderTurn(){
   const p = curP();
   document.getElementById('turn-name').textContent = '轮到「' + p.name + '」回答';
-  document.getElementById('turn-sub').textContent = G.cardFaceUp ? '答完点下方按钮，传给下一位' : '点击卡牌翻开题目';
+  document.getElementById('turn-sub').textContent = G.cardFaceUp ? '答完点一下卡牌，传给下一位' : '点击卡牌翻开题目';
   document.getElementById('exempt-left').textContent = p.name + ' 剩余豁免：' + '◆'.repeat(p.exempt) + '◇'.repeat(Math.max(0,3-p.exempt));
   const hb = document.getElementById('heart-btn');
   hb.classList.remove('marked'); hb.textContent = '🤍';
