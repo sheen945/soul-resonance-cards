@@ -3,3 +3,5 @@ tests/out/
 gen_log.txt
 gen_done.txt
 样张*
+dist/
+.wrangler/
